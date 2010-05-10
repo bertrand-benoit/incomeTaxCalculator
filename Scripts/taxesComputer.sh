@@ -1,8 +1,8 @@
 #!/bin/bash
 #
 # Author: Bertrand BENOIT <bertrand.benoit@bsquare.no-ip.org>
-# Version: 1.0
-# Description: incomes taxes computer.
+# Version: 1.1
+# Description: French incomes taxes computer.
 #
 # usage: see usage function
 
@@ -10,24 +10,31 @@
 #                Configuration
 #####################################################
 
-# 2010 taxes information.
-STEP_COUNT=6
-TAXES_STEPS=( 0 5875 11720 26030 69783 999999 )
-TAXES_PERCENT=( 0 0 5.5 14 30 40 )
-TAXES_REDUCE_FACTOR=0.899997283273
+# General information.
+TAXES_REDUCE_FACTOR=0.90
 MONTHS=( none January February Marsh April May June July August September October November December ) 
+DEFAULT_YEAR=$( date "+%Y" )
+
+# 2010 taxes information.
+TAXES_STEPS_2010=( 0 5875 11720 26030 69783 999999 )
+TAXES_STEPS_PERCENT_2010=( 0 0 5.5 14 30 40 )
+
+# 2009 taxes information.
+TAXES_STEPS_2009=( 0 5852 11673 25926 69505 999999 )
+TAXES_STEPS_PERCENT_2009=( 0 0 5.5 14 30 40 )
 
 #####################################################
 #                Defines usages.
 #####################################################
 function usage {
-  echo -e "-i|--incomes <incomes> [-c|--charges <charges>] [-u|--union <month>] [-j <incomes 2>] [-p|--part <part count>] [-h|--help]"
+  echo -e "usage: $0 -i|--incomes <incomes> [-c|--charges <charges>] [-u|--union <month>] [-j <incomes 2>] [-p|--part <part count>] [-y|--year <year of taxes>] [-h|--help]"
   echo -e "-h|--help\tshow this help"
   echo -e "<incomes>\tincomes to manage"
   echo -e "<incomes 2>\tincomes of other people to manage"
   echo -e "<charges>\tpotential charges to manage"
   echo -e "<part count>\tcount of part (exclusive with -u|--union option)"
-  echo -e "<month>\tthe month from which the union is concluded (can be something 1-12, to compute for each month) (exclusive with -p|--part option)"
+  echo -e "<month>\t\tthe month from which the union is concluded (can be something 1-12, to compute for each month) (exclusive with -p|--part option)"
+  echo -e "<year>\t\tyear of taxes (default: $DEFAULT_YEAR)"
   exit 1
 }
 
@@ -39,6 +46,7 @@ lastComptedTaxes=0
 charges=0
 partCount=1
 incomes2=0
+year=$DEFAULT_YEAR
 while [ "$1" != "" ]; do
   if [ "$1" == "-i" ] || [ "$1" = "--incomes" ]; then
     shift    
@@ -55,6 +63,9 @@ while [ "$1" != "" ]; do
   elif [ "$1" == "-p" ] || [ "$1" = "--part" ]; then
     shift
     partCount="$1"
+  elif [ "$1" == "-y" ] || [ "$1" = "--year" ]; then
+    shift
+    year="$1"
   elif [ "$1" = "-h" ] || [ "$1" = "--help" ]; then
     usage
   else
@@ -68,6 +79,11 @@ done
 # TODO improve control -u/-p exclusive, ensure specified value are numbers ...
 [ -z "$incomes" ] && echo -e "You must specify incomes" >&2 && usage
 
+# Ensures information exists for year.
+taxesSteps="TAXES_STEPS_$year"
+taxesStepsPercent="TAXES_STEPS_PERCENT_$year"
+
+[ -z "$( eval echo \${$taxesSteps[4]} )" ] && echo -e "Year $year is not supported" >&2 && usage
 
 #####################################################
 #                Functions
@@ -86,9 +102,14 @@ function computeIncomesTaxes() {
   remaningIncomes=$( echo "scale=2;$remaningIncomes*$TAXES_REDUCE_FACTOR" |bc )
   echo -ne "reduced to: $remaningIncomes ... "
 
-  # Removes charges.
-  remaningIncomes=$( echo "scale=2;$remaningIncomes-$_charges" |bc )
-  echo -ne "less the charges: $remaningIncomes ... "
+  # Removes charges if any.
+  if [ $( echo "$_charges>0" |bc ) -eq 1 ]; then
+    remaningIncomes=$( echo "scale=2;$remaningIncomes-$_charges" |bc )
+    echo -ne "less the charges: $remaningIncomes ... "
+  fi
+
+  # Memorizes the reference incomes to compute %.
+  incomesRef="$remaningIncomes"
 
   # Takes care of part count.
   if [ $_partCount -gt 1 ]; then
@@ -100,15 +121,15 @@ function computeIncomesTaxes() {
   taxes=0
   lastComptedTaxes=0
   echo -ne "taxes=0"
-  lastStep=${TAXES_STEPS[1]}
+  lastStep=$( eval echo \${$taxesSteps[1]} )
 
   # Checks if incoms are greater than the "last" step, otherwise there is no taxe.
   if [ $( echo "$remaningIncomes>=$lastStep" |bc ) -eq 0 ]; then
     echo ""
   else
     for step in 2 3 4 5; do
-      taxeStep=${TAXES_STEPS[$step]}
-      taxePercent=${TAXES_PERCENT[$step]}
+      taxeStep=$( eval echo \${$taxesSteps[$step]} )
+      taxePercent=$( eval echo \${$taxesStepsPercent[$step]} )
 
       if [ $( echo "$remaningIncomes>=$taxeStep" |bc ) -eq 1 ]; then
 	incomesPart=$( echo "scale=2;$taxeStep-$lastStep" | bc )
@@ -133,10 +154,13 @@ function computeIncomesTaxes() {
       taxes=$( echo "scale=2;$taxes*$_partCount" |bc )
     fi
 
+    # Computes the taxes %.
+    taxesPercent=$( echo "scale=2;100*$taxes/$incomesRef" |bc )
+
     lastComptedTaxes=$taxes
 
     # In cases, show the final taxes value.
-    echo "=$taxes"
+    echo "=$taxes -> ratio=$taxesPercent%"
   fi
 }
 
