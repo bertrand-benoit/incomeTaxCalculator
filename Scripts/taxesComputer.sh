@@ -1,7 +1,7 @@
 #!/bin/bash
 #
-# Author: Bertrand BENOIT <bertrand.benoit@bsquare.no-ip.org>
-# Version: 1.1
+# Author: Bertrand BENOIT <bertrandbenoit.bsquare@gmail.com>
+# Version: 1.2
 # Description: French incomes taxes computer.
 #
 # usage: see usage function
@@ -15,6 +15,10 @@ TAXES_REDUCE_FACTOR=0.90
 MONTHS=( none January February Marsh April May June July August September October November December ) 
 DEFAULT_YEAR=$( date "+%Y" )
 
+# 2011 taxes information.
+TAXES_STEPS_2011=( 0 5964 11896 26420 70830 999999 )
+TAXES_STEPS_PERCENT_2011=( 0 0 5.5 14 30 41 )
+
 # 2010 taxes information.
 TAXES_STEPS_2010=( 0 5875 11720 26030 69783 999999 )
 TAXES_STEPS_PERCENT_2010=( 0 0 5.5 14 30 40 )
@@ -27,20 +31,39 @@ TAXES_STEPS_PERCENT_2009=( 0 0 5.5 14 30 40 )
 #                Defines usages.
 #####################################################
 function usage {
-  echo -e "usage: $0 -i|--incomes <incomes> [-c|--charges <charges>] [-u|--union <month>] [-j <incomes 2>] [-p|--part <part count>] [-y|--year <year of taxes>] [-h|--help]"
+  echo -e "usage: $0 -i|--incomes <incomes 1> [-c|--charges <charges 1>] [-d <charges 1.2>] [-u|--union <month>] [-k <incomes 1.2>] [-j <incomes 2>] [-l <incomes 2.2>] [-p|--part <part count>] [-y|--year <year of taxes>] [-h|--help]"
   echo -e "-h|--help\tshow this help"
-  echo -e "<incomes>\tincomes to manage"
-  echo -e "<incomes 2>\tincomes of other people to manage"
-  echo -e "<charges>\tpotential charges to manage"
+  echo -e "<incomes 1>\tincomes to manage for the whole year of the first part in case of union's year"
+  echo -e "<incomes 2>\tincomes of other people to manage for the whole year of the first part in case of union's year"
+  echo -e "<incomes 1.2>\tincomes to manage for the second part in case of union's year"
+  echo -e "<incomes 2.2>\tincomes of other people to manage for the second part in case of union's year"
+  echo -e "<charges>\tpotential charges to manage for the whole year of the first part in case of union's year"
+  echo -e "<charges 1.2>\tpotential charges to manage for the the second part in case of union's year"
   echo -e "<part count>\tcount of part (exclusive with -u|--union option)"
   echo -e "<month>\t\tthe month from which the union is concluded (can be something 1-12, to compute for each month) (exclusive with -p|--part option)"
   echo -e "<year>\t\tyear of taxes (default: $DEFAULT_YEAR)"
+  echo -e "\nExamples:"
+  echo -e "Computes incomes taxes for 1 person, with 10000€ incomes, 1000€ charges:"
+  echo -e "  $0 -i 10000 -c 1000"
+  echo -e "\nComputes incomes taxes for 2 persons, with total 20000€ incomes, and total 1000€ charges:"
+  echo -e "  $0 -i 20000 -c 1000 -p 2"
+  echo -e "\nJust Married or PACS -> computes APPROXIMATIVES incomes taxes for 2 persons united the 5th month, with 10000€ as first incomes, and 15000€ as seconds, total 1000€ charges:"
+  echo -e "  $0 -i 10000 -j 15000 -c 1000 -u 5"
+  echo -e "\nYou want to have an idea of the best month to be united ?"
+  echo -e "  $0 -i 10000 -j 15000 -c 1000 -u 1-12"
+  echo -e "\nJust Married or PACS -> computes precise incomes taxes for 2 persons united the xx/yy/zz, with precise incomes (first person: 3000€ earned from 01/01/zz to xx/yy/zz, and 7000€ earned from xx+1/12/zz; second person: 1000€ then 400€ for same periods), and precise charges (first person: 100€ then 400€; second person: no charge)"
+  echo -e "  $0 -i 3000 -k 7000 -j 1000 -l 400 -c 100 -d 400"
   exit 1
 }
 
 #####################################################
 #                Command line management.
 #####################################################
+
+# N.B.: variables names:
+#  - incomes and incomes12 for first person
+#  - incomes2 and incomes22 for second person
+#  - charges and charges12 for first person
 
 lastComptedTaxes=0
 charges=0
@@ -54,6 +77,15 @@ while [ "$1" != "" ]; do
   elif [ "$1" == "-j" ]; then
     shift
     incomes2="$1"
+  elif [ "$1" == "-k" ]; then
+    shift
+    incomes12="$1"
+  elif [ "$1" == "-l" ]; then
+    shift
+    incomes22="$1"
+  elif [ "$1" == "-d" ]; then
+    shift
+    charges12="$1"
   elif [ "$1" == "-c" ] || [ "$1" = "--charges" ]; then
     shift
     charges="$1"
@@ -199,7 +231,7 @@ function computeIncomesTaxesWithUnionAtMonth() {
   lastComptedTaxes=$taxesSum
 }
 
-# usage: computeIncomesTaxes <incomes>  <incomes 2> <charges> <month(s)>
+# usage: computeIncomesTaxesWithUnion <incomes>  <incomes 2> <charges> <month(s)>
 function computeIncomesTaxesWithUnion() {
   local _incomes="$1"
   local _incomes2="$2"
@@ -234,12 +266,42 @@ function computeIncomesTaxesWithUnion() {
   fi
 }
 
+# usage: computePreciseIncomesTaxesWithUnion <incomes1.1> <incomes1.2> <incomes 2.1> <incomes 2.2> <charges 1.1> <charges 1.2>
+function computePreciseIncomesTaxesWithUnion() {
+  local _incomes11="$1" _incomes12="$2" _incomes21="$3" _incomes22="$4"
+  local _charges11="$5" _charges12="$6"
+
+  taxesSum=0
+
+  ## Computes the taxes before the union.
+  # First person.
+  echo -ne "Person 1  (before union): "
+  computeIncomesTaxes "$_incomes11" "$_charges11" 1
+  taxesSum=$( echo "scale=2;$taxesSum+$lastComptedTaxes" |bc )
+
+  # Second person.
+  echo -ne "Person 2  (before union): "
+  computeIncomesTaxes "$_incomes21" "0" 1
+  taxesSum=$( echo "scale=2;$taxesSum+$lastComptedTaxes" |bc )
+
+  ## Computes the taxes after the union.
+  echo -ne "Person 1&2 (after union): "
+  incomesAfter=$( echo "scale=2;$_incomes12+$_incomes22" |bc )
+  chargesAfter="$_charges12"
+  computeIncomesTaxes "$incomesAfter" "$chargesAfter" 2
+  taxesSum=$( echo "scale=2;$taxesSum+$lastComptedTaxes" |bc )
+
+  echo -e "The year incomes taxes sum=$taxesSum"
+}
+
 #####################################################
 #                Instructions
 #####################################################
 
-# Checks if union month(s) have been specified.
-if [ -z "$unionMonths" ]; then
+# Checks if second part of incomes of first person has been specified; otherwise union month(s) have been specified.
+if [ ! -z "$incomes12" ]; then
+  computePreciseIncomesTaxesWithUnion "$incomes" "$incomes12" "$incomes2" "$incomes22" "$charges" "$charges12"
+elif [ -z "$unionMonths" ]; then
   computeIncomesTaxes "$incomes" "$charges" "$partCount"
 else
   computeIncomesTaxesWithUnion "$incomes" "$incomes2" "$charges" "$unionMonths"
