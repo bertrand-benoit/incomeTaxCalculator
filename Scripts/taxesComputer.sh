@@ -16,7 +16,8 @@ MONTHS=( none January February Marsh April May June July August September Octobe
 DEFAULT_YEAR=$( date "+%Y" )
 
 # 2011 taxes information.
-TAXES_STEPS_2011=( 0 5964 11896 26420 70830 999999 )
+# Cf. http://droit-finances.commentcamarche.net/faq/5808-loi-de-finances-2011-les-nouvelles-tranches-d-imposition
+TAXES_STEPS_2011=( 0 5963 11896 26420 70830 999999 )
 TAXES_STEPS_PERCENT_2011=( 0 0 5.5 14 30 41 )
 
 # 2010 taxes information.
@@ -26,6 +27,10 @@ TAXES_STEPS_PERCENT_2010=( 0 0 5.5 14 30 40 )
 # 2009 taxes information.
 TAXES_STEPS_2009=( 0 5852 11673 25926 69505 999999 )
 TAXES_STEPS_PERCENT_2009=( 0 0 5.5 14 30 40 )
+
+# 2008 taxes information.
+TAXES_STEPS_2008=( 0 5688 11345 25196 67547 999999 )
+TAXES_STEPS_PERCENT_2008=( 0 0 5.5 14 30 40 )
 
 #####################################################
 #                Defines usages.
