@@ -15,6 +15,13 @@ TAXES_REDUCE_FACTOR=0.90
 MONTHS=( none January February Marsh April May June July August September October November December ) 
 DEFAULT_YEAR=$( date "+%Y" )
 
+# 2012 taxes information.
+# Cf. http://droit-finances.commentcamarche.net/faq/3912-bareme-2012-de-l-impot-sur-le-revenu-2011
+# Cf. http://www.francetransactions.com/actualites/info-epargne-0008591.html
+# Cf. http://www.calcul-impot-revenu-2012.fr/bareme-tranches-impot-revenu-2012.html
+TAXES_STEPS_2012=( 0 5963 11896 26420 70830 999999 )
+TAXES_STEPS_PERCENT_2012=( 0 0 5.5 14 30 41 )
+
 # 2011 taxes information.
 # Cf. http://droit-finances.commentcamarche.net/faq/5808-loi-de-finances-2011-les-nouvelles-tranches-d-imposition
 TAXES_STEPS_2011=( 0 5963 11896 26420 70830 999999 )
