@@ -12,8 +12,13 @@
 
 # General information.
 TAXES_REDUCE_FACTOR=0.90
-MONTHS=( none January February Marsh April May June July August September October November December ) 
+MONTHS=( none January February Marsh April May June July August September October November December )
 DEFAULT_YEAR=$( date "+%Y" )
+
+# 2013 taxes information.
+# Cf. http://droit-finances.commentcamarche.net/faq/20217-bareme-2013-de-l-impot-sur-le-revenu-2012#q=bar%E8me+2013+impot+revenu&cur=2&url=%2F
+TAXES_STEPS_2013=( 0 5963 11896 26420 70830 150000 999999 )
+TAXES_STEPS_PERCENT_2013=( 0 0 5.5 14 30 41 45 )
 
 # 2012 taxes information.
 # Cf. http://droit-finances.commentcamarche.net/faq/3912-bareme-2012-de-l-impot-sur-le-revenu-2011
@@ -84,7 +89,7 @@ incomes2=0
 year=$DEFAULT_YEAR
 while [ "$1" != "" ]; do
   if [ "$1" == "-i" ] || [ "$1" = "--incomes" ]; then
-    shift    
+    shift
     incomes="$1"
   elif [ "$1" == "-j" ]; then
     shift
