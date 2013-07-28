@@ -1,7 +1,7 @@
 #!/bin/bash
 #
 # Author: Bertrand BENOIT <bertrandbenoit.bsquare@gmail.com>
-# Version: 1.2
+# Version: 1.3
 # Description: French incomes taxes computer.
 #
 # usage: see usage function
@@ -11,9 +11,17 @@
 #####################################################
 
 # General information.
-TAXES_REDUCE_FACTOR=0.90
+TAXES_REDUCE_PERCENT=10
 MONTHS=( none January February Marsh April May June July August September October November December )
 DEFAULT_YEAR=$( date "+%Y" )
+
+NO_CGA_MAJO_PERCENT=25
+
+# Micro-social
+# Cf. http://auto-entrepreneur-micro.fr/abattements.htm
+# Cf. http://www.apce.com/cid5583/regime-fiscal-de-la-micro-entreprise-bic-et-bnc.html&pid=958#Imposition des bénéfices
+TAXES_RED_SERVICE_PERCENT=50
+TAXES_RED_SELL_PERCENT=71
 
 # 2013 taxes information.
 # Cf. http://droit-finances.commentcamarche.net/faq/20217-bareme-2013-de-l-impot-sur-le-revenu-2012#q=bar%E8me+2013+impot+revenu&cur=2&url=%2F
@@ -48,7 +56,7 @@ TAXES_STEPS_PERCENT_2008=( 0 0 5.5 14 30 40 )
 #                Defines usages.
 #####################################################
 function usage {
-  echo -e "usage: $0 -i|--incomes <incomes 1> [-c|--charges <charges 1>] [-d <charges 1.2>] [-u|--union <month>] [-k <incomes 1.2>] [-j <incomes 2>] [-l <incomes 2.2>] [-p|--part <part count>] [-y|--year <year of taxes>] [-h|--help]"
+  echo -e "usage: $0 -i|--incomes <incomes 1> [-c|--charges <charges 1>] [-d <charges 1.2>] [-u|--union <month>] [-k <incomes 1.2>] [-j <incomes 2>] [-l <incomes 2.2>] [-p|--part <part count>] [-r <bic incomes>] [-s <service incomes>] [-t <sell incomes>] [-z] [-y|--year <year of taxes>] [-h|--help]"
   echo -e "-h|--help\tshow this help"
   echo -e "<incomes 1>\tincomes to manage for the whole year of the first part in case of union's year"
   echo -e "<incomes 2>\tincomes of other people to manage for the whole year of the first part in case of union's year"
@@ -58,6 +66,10 @@ function usage {
   echo -e "<charges 1.2>\tpotential charges to manage for the the second part in case of union's year"
   echo -e "<part count>\tcount of part (exclusive with -u|--union option)"
   echo -e "<month>\t\tthe month from which the union is concluded (can be something 1-12, to compute for each month) (exclusive with -p|--part option)"
+  echo -e "<bic incomes>\tincomes of EURL/SARL in RSI (BIC IR)"
+  echo -e "<service incomes>\tincomes of 'société individuelle' for 'prestation de services'"
+  echo -e "<sell incomes>\tincomes of 'société individuelle' for 'ventes accessoires'"
+  echo -e "-z\t\tindicates CGA for BIC IR"
   echo -e "<year>\t\tyear of taxes (default: $DEFAULT_YEAR)"
   echo -e "\nExamples:"
   echo -e "Computes incomes taxes for 1 person, with 10000€ incomes, 1000€ charges:"
@@ -86,6 +98,7 @@ lastComptedTaxes=0
 charges=0
 partCount=1
 incomes2=0
+hasCga=0
 year=$DEFAULT_YEAR
 while [ "$1" != "" ]; do
   if [ "$1" == "-i" ] || [ "$1" = "--incomes" ]; then
@@ -100,9 +113,20 @@ while [ "$1" != "" ]; do
   elif [ "$1" == "-l" ]; then
     shift
     incomes22="$1"
+  elif [ "$1" == "-r" ]; then
+    shift
+    incomesBIC="$1"
+  elif [ "$1" == "-s" ]; then
+    shift
+    incomesServices="$1"
+  elif [ "$1" == "-t" ]; then
+    shift
+    incomesSell="$1"
   elif [ "$1" == "-d" ]; then
     shift
     charges12="$1"
+  elif [ "$1" == "-z" ]; then
+    hasCga=1
   elif [ "$1" == "-c" ] || [ "$1" = "--charges" ]; then
     shift
     charges="$1"
@@ -138,23 +162,45 @@ taxesStepsPercent="TAXES_STEPS_PERCENT_$year"
 #                Functions
 #####################################################
 
-# usage: computeIncomesTaxes <incomes> <charges> <part count>
+# usage: computeIncomesTaxes <incomes> <charges> <part count> [<bic incomes> <services incomes> <sell incomes>]
 function computeIncomesTaxes() {
-  local _incomes="$1"
-  local _charges="$2"
-  local _partCount="$3"
+  local _incomes="$1" _charges="$2" _partCount="$3"
+  local _bicIncomes="${4:-0}" _serviceIncomes="${5:-0}" _sellIncomes="${6:-0}"
 
+  # Initial value.
   remaningIncomes="$_incomes"
-  echo -ne "Incomes: $remaningIncomes ... "
 
   # Reduces.
-  remaningIncomes=$( echo "scale=2;$remaningIncomes*$TAXES_REDUCE_FACTOR" |bc )
-  echo -ne "reduced to: $remaningIncomes ... "
+  remaningIncomes=$( echo "scale=2;$remaningIncomes*(100-$TAXES_REDUCE_PERCENT)/100" |bc )
+  echo -ne "  Incomes\t\t(reduction=$TAXES_REDUCE_PERCENT%): $remaningIncomes ... "
+
+  # Manages BIC incomes if any.
+  if [ $( echo "$_bicIncomes>0" |bc ) -eq 1 ]; then
+    if [ $hasCga -eq 1 ]; then
+      remaningIncomes=$( echo "scale=2;$remaningIncomes+$_bicIncomes" |bc )
+      echo -ne "\n+ BIC Incomes\t\t(NO  reduction): $remaningIncomes ... "
+    else
+      remaningIncomes=$( echo "scale=2;$remaningIncomes+($_bicIncomes*(100+$NO_CGA_MAJO_PERCENT)/100)" |bc )
+      echo -ne "\n+ BIC Incomes\t\t(majo     =$NO_CGA_MAJO_PERCENT%): $remaningIncomes ... "
+    fi
+  fi
+
+  # Manages Services incomes if any.
+  if [ $( echo "$_serviceIncomes>0" |bc ) -eq 1 ]; then
+    remaningIncomes=$( echo "scale=2;$remaningIncomes+($_serviceIncomes*(100-$TAXES_RED_SERVICE_PERCENT)/100)" |bc )
+    echo -ne "\n+ Service Incomes\t(reduction=$TAXES_RED_SERVICE_PERCENT%): $remaningIncomes ... "
+  fi
+
+  # Manages Sell incomes if any.
+  if [ $( echo "$_sellIncomes>0" |bc ) -eq 1 ]; then
+    remaningIncomes=$( echo "scale=2;$remaningIncomes+($_sellIncomes*(100-$TAXES_RED_SELL_PERCENT)/100)" |bc )
+    echo -ne "\n+ Sell Incomes\t\t(reduction=$TAXES_RED_SELL_PERCENT%): $remaningIncomes ... "
+  fi
 
   # Removes charges if any.
   if [ $( echo "$_charges>0" |bc ) -eq 1 ]; then
     remaningIncomes=$( echo "scale=2;$remaningIncomes-$_charges" |bc )
-    echo -ne "less the charges: $remaningIncomes ... "
+    echo -ne "\n- charges: $remaningIncomes ... "
   fi
 
   # Memorizes the reference incomes to compute %.
@@ -163,13 +209,13 @@ function computeIncomesTaxes() {
   # Takes care of part count.
   if [ $_partCount -gt 1 ]; then
     remaningIncomes=$( echo "scale=2;$remaningIncomes/$_partCount" |bc )
-    echo -ne "divided by part count: $remaningIncomes ... "
+    echo -ne "\n  divided by part count: $remaningIncomes ... "
   fi
 
   # For each step.
   taxes=0
   lastComptedTaxes=0
-  echo -ne "taxes=0"
+  echo -ne "\n=>Taxes=0"
   lastStep=$( eval echo \${$taxesSteps[1]} )
 
   # Checks if incoms are greater than the "last" step, otherwise there is no taxe.
@@ -319,7 +365,7 @@ function computePreciseIncomesTaxesWithUnion() {
 if [ ! -z "$incomes12" ]; then
   computePreciseIncomesTaxesWithUnion "$incomes" "$incomes12" "$incomes2" "$incomes22" "$charges" "$charges12"
 elif [ -z "$unionMonths" ]; then
-  computeIncomesTaxes "$incomes" "$charges" "$partCount"
+  computeIncomesTaxes "$incomes" "$charges" "$partCount" "$incomesBIC" "$incomesServices" "$incomesSell"
 else
   computeIncomesTaxesWithUnion "$incomes" "$incomes2" "$charges" "$unionMonths"
 fi
