@@ -23,6 +23,16 @@ NO_CGA_MAJO_PERCENT=25
 TAXES_RED_SERVICE_PERCENT=50
 TAXES_RED_SELL_PERCENT=71
 
+# 2015 taxes information.
+# Cf. http://droit-finances.commentcamarche.net/faq/20217-bareme-2015-de-l-impot-sur-le-revenu-2014#q=bar%E8me+2013+impot+revenu&cur=2&url=%2F
+TAXES_STEPS_2015=( 0 9690 26764 71754 151956 999999 )
+TAXES_STEPS_PERCENT_2015=( 0 0 14 30 41 45 )
+
+# 2014 taxes information.
+# TODO: these informations must be checked !
+TAXES_STEPS_2014=( 0 5963 11896 26420 70830 150000 999999 )
+TAXES_STEPS_PERCENT_2014=( 0 0 5.5 14 30 41 45 )
+
 # 2013 taxes information.
 # Cf. http://droit-finances.commentcamarche.net/faq/20217-bareme-2013-de-l-impot-sur-le-revenu-2012#q=bar%E8me+2013+impot+revenu&cur=2&url=%2F
 TAXES_STEPS_2013=( 0 5963 11896 26420 70830 150000 999999 )
