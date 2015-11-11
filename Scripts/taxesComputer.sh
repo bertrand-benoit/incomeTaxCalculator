@@ -23,6 +23,11 @@ NO_CGA_MAJO_PERCENT=25
 TAXES_RED_SERVICE_PERCENT=50
 TAXES_RED_SELL_PERCENT=71
 
+# 2016 taxes information.
+# Cf. http://www.francetransactions.com/impots/bareme-impot-2016.html
+TAXES_STEPS_2016=( 0 9700 26791 71826 152108 999999 )
+TAXES_STEPS_PERCENT_2016=( 0 0 14 30 41 45 )
+
 # 2015 taxes information.
 # Cf. http://droit-finances.commentcamarche.net/faq/20217-bareme-2015-de-l-impot-sur-le-revenu-2014#q=bar%E8me+2013+impot+revenu&cur=2&url=%2F
 TAXES_STEPS_2015=( 0 9690 26764 71754 151956 999999 )
