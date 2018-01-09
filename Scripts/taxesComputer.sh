@@ -15,13 +15,16 @@ TAXES_REDUCE_PERCENT=10
 MONTHS=( none January February Marsh April May June July August September October November December )
 DEFAULT_YEAR=$( date "+%Y" )
 
-NO_CGA_MAJO_PERCENT=25
-
 # Micro-social
 # Cf. http://auto-entrepreneur-micro.fr/abattements.htm
 # Cf. http://www.apce.com/cid5583/regime-fiscal-de-la-micro-entreprise-bic-et-bnc.html&pid=958#Imposition des bénéfices
 TAXES_RED_SERVICE_PERCENT=50
 TAXES_RED_SELL_PERCENT=71
+
+# 2017 taxes information.
+# Cf. http://www.francetransactions.com/impots/bareme-impot-2017.html
+TAXES_STEPS_2017=( 0 9710 26818 71898 152260 999999 )
+TAXES_STEPS_PERCENT_2017=( 0 0 14 30 41 45 )
 
 # 2016 taxes information.
 # Cf. http://www.francetransactions.com/impots/bareme-impot-2016.html
