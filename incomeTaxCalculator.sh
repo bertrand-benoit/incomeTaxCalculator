@@ -1,8 +1,8 @@
 #!/bin/bash
 #
-# Author: Bertrand BENOIT <bertrandbenoit.bsquare@gmail.com>
-# Version: 1.3
-# Description: French incomes taxes computer.
+# Author: Bertrand Benoit <mailto:contact@bertrand-benoit.net>
+# Version: 1.4
+# Description: French income tax calculator.
 #
 # usage: see usage function
 
