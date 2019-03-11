@@ -21,6 +21,16 @@ DEFAULT_YEAR=$( date "+%Y" )
 TAXES_RED_SERVICE_PERCENT=50
 TAXES_RED_SELL_PERCENT=71
 
+# 2019 taxes information.
+# Cf. http://www.francetransactions.com/impots/bareme-impot-2019.html
+TAXES_STEPS_2019=( 0 9964 27519 73779 156224 999999 )
+TAXES_STEPS_PERCENT_2019=( 0 0 14 30 41 45 )
+
+# 2018 taxes information.
+# Cf. http://www.francetransactions.com/impots/bareme-impot-2018.html
+TAXES_STEPS_2018=( 0 9807 27086 72617 153783 999999 )
+TAXES_STEPS_PERCENT_2018=( 0 0 14 30 41 45 )
+
 # 2017 taxes information.
 # Cf. http://www.francetransactions.com/impots/bareme-impot-2017.html
 TAXES_STEPS_2017=( 0 9710 26818 71898 152260 999999 )
